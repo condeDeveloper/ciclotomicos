@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.so }}
+
+    # bash nos tres sistemas: no Windows o shell padrao e o PowerShell, e ele
+    # desmonta "-Dexec.args=..." em dois argumentos antes de o Maven ver.
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Testes
+        run: mvn -B -ntp verify
+
+      - name: Onde a altura bate recorde
+        run: mvn -B -ntp -q exec:java -Dexec.args="recordes"
+
+      - name: Altura por numero de primos impares
+        run: mvn -B -ntp -q exec:java -Dexec.args="fatores"
+
+      - name: As tres conferencias
+        run: mvn -B -ntp -q exec:java -Dexec.args="juiz"
+
+      - name: Os polinomios pequenos e o 105
+        run: mvn -B -ntp -q exec:java -Dexec.args="exemplos"
+
+      - name: Relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.so }}
+          path: target/surefire-reports
+
+  fundo:
+    # A varredura ate 6.000 leva quase meio minuto: fica num job proprio, para
+    # nao pesar na matriz de tres sistemas.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Varredura ate 6.000
+        run: mvn -B -ntp -q exec:java -Dexec.args="fundo"
